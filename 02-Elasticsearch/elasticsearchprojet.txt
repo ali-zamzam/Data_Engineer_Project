@@ -1,0 +1,605 @@
+GET /_cat/indices
+
+"""(((((((((((((cashnet)))))))))))))"""
+
+********************************
+GET /ch/_mapping
+
+output:
+{
+  "new_cash" : {
+    "mappings" : {
+      "properties" : {
+        "Title" : {
+          "type" : "text",
+          "fields" : {
+            "keyword" : {
+              "type" : "keyword",
+              "ignore_above" : 256
+            }
+          }
+        },
+        "reviews" : {
+          "type" : "text",
+          "fields" : {
+            "keyword" : {
+              "type" : "keyword",
+              "ignore_above" : 256
+            }
+          }
+        },
+        "stars" : {
+          "type" : "text",
+          "fields" : {
+            "keyword" : {
+              "type" : "keyword",
+              "ignore_above" : 256
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+
+********************************
+PUT /cashs
+{
+  "mappings" : {
+      "properties" : {
+        "Title" : {
+          "type" : "text",
+          "fields" : {
+            "keyword" : {
+              "type" : "keyword",
+              "ignore_above" : 256
+            }
+          }
+        },
+        "reviews" : {
+          "type" : "text"
+        },
+        "stars" : {
+          "type" : "integer"
+        }
+      }
+    }
+  }
+
+
+si on a un jeu de données très volumineux on peut créer plusiers shards et replicas
+"settings": {
+"number_of_shards": 2,
+"number_of_replicas": 1
+}
+
+********************************
+POST _reindex?wait_for_completion=false
+{
+  "source": {
+    "index": "ch"
+  },
+  "dest": {
+    "index": "cashs"
+  }
+}
+********************************
+maintenant on peut supprimer l'ancien index
+
+DELETE /ch
+*******************************
+
+
+GET /cashs/_search
+{
+  "query": {
+    "match_all": {}
+  }
+}
+
+
+output:
+{
+  "took" : 176,
+  "timed_out" : false,
+  "_shards" : {
+    "total" : 1,
+    "successful" : 1,
+    "skipped" : 0,
+    "failed" : 0
+  },
+  "hits" : {
+    "total" : {
+      "value" : 10000,
+      "relation" : "gte"
+    },
+    "max_score" : 1.0,
+    "hits" : [
+      {
+        "_index" : "cash",
+        "_id" : "yXBICIQBPTt_2BrO0_aj",
+        "_score" : 1.0,
+        "_source" : {
+          "Title" : "So...it was simple and quick",
+          "reviews" : "So...it was simple,quick,and informative. I already have a date for my funds to be deposited,and a breakdown of my payments,including dollar amount,dates,and length of contract. Personally, I find no issues that could be improved upon.. easy for me to recommend this service to anybody looking for a loan",
+          "stars" : "5"
+        }
+      }
+********************************
+
+GET /cashs/_search
+{"size": 30, 
+  "query": {
+    "match": {
+      "Title": {
+        "query": "bad experience"
+      }
+    }
+  }
+}
+
+
+output:
+"hits" : {
+    "total" : {
+      "value" : 405,
+      "relation" : "eq"
+    },
+    "max_score" : 12.309948,
+    "hits" : [
+      {
+        "_index" : "cashs",
+        "_id" : "s29eFYQBDv47uvMdH0Z7",
+        "_score" : 12.309948,
+        "_source" : {
+          "Title" : "Bad experience",
+          "reviews" : "Didn't tell me why I couldn't get the loan",
+          "stars" : "1"
+        }
+      },
+      {
+        "_index" : "cashs",
+        "_id" : "LG9eFYQBDv47uvMdGi0k",
+        "_score" : 8.02326,
+        "_source" : {
+          "Title" : "I have never had a bad experience",
+          "reviews" : "Eventhough I am going some hard times and now sick with Covid this company continues to give me help with options to keep my account updated.  Thank you",
+          "stars" : "5"
+        }
+      }
+***********************************************************
+{"size": 30, 
+  "query": {
+    "match": {
+      "reviews": {
+        "query": "great"
+      }
+    }
+  }
+}
+
+
+output:
+
+"hits" : {
+    "total" : {
+      "value" : 1481,
+      "relation" : "eq"
+    },
+    "max_score" : 3.6411464,
+    "hits" : [
+      {
+        "_index" : "cashs",
+        "_id" : "UG9eFYQBDv47uvMdHj4c",
+        "_score" : 3.6411464,
+        "_source" : {
+          "Title" : "CashNet was a No-hassle solution to my…",
+          "reviews" : "Great company great company great company",
+          "stars" : "5"
+        }
+      },
+      {
+        "_index" : "cashs",
+        "_id" : "sG9eFYQBDv47uvMdGzOx",
+        "_score" : 3.6054964,
+        "_source" : {
+          "Title" : "Very satisfied...always there when…",
+          "reviews" : "Great service great rates great all around",
+          "stars" : "5"
+        }
+      }
+
+**************************************
+GET /cashs/_search?scroll=1m
+{"size":100,
+  "query": {
+    "range": {
+      "stars": {
+        "gte": 2,
+        "lte":3
+      }
+    }
+  }
+}
+
+
+output:
+
+"hits" : {
+    "total" : {
+      "value" : 331,
+      "relation" : "eq"
+    },
+    "max_score" : 1.0,
+    "hits" : [
+      {
+        "_index" : "cashs",
+        "_id" : "MW9eFYQBDv47uvMdFyCm",
+        "_score" : 1.0,
+        "_source" : {
+          "Title" : "Paid loan off in 46 days",
+          "reviews" : "They loaned me $2200 with a payment of $365, made first payment and found only $35 went to principal, so I called to pay it off and paid an additional $2398 only 46 days of a loan and paid $500+ for this rescue loan. 300% interest?",
+          "stars" : "3"
+        }
+      },
+      {
+        "_index" : "cashs",
+        "_id" : "tm9eFYQBDv47uvMdFyCn",
+        "_score" : 1.0,
+        "_source" : {
+          "Title" : "Very professional",
+          "reviews" : "Things went better than I expected.",
+          "stars" : "3"
+        }
+      }
+*************************************************
+GET /cashs/_search?scroll=1m
+{
+  "query": {
+    "range": {
+      "stars": {
+        "gte": 4
+      }
+    }
+  }
+}
+
+
+output:
+"hits" : {
+    "total" : {
+      "value" : 9437,
+      "relation" : "eq"
+    },
+    "max_score" : 1.0,
+    "hits" : [
+      {
+        "_index" : "cashs",
+        "_id" : "LG9eFYQBDv47uvMdFyCl",
+        "_score" : 1.0,
+        "_source" : {
+          "Title" : "So...it was simple and quick",
+          "reviews" : "So...it was simple,quick,and informative. I already have a date for my funds to be deposited,and a breakdown of my payments,including dollar amount,dates,and length of contract. Personally, I find no issues that could be improved upon.. easy for me to recommend this service to anybody looking for a loan",
+          "stars" : "5"
+        }
+      },
+      {
+        "_index" : "cashs",
+        "_id" : "LW9eFYQBDv47uvMdFyCl",
+        "_score" : 1.0,
+        "_source" : {
+          "Title" : "Highly recommend",
+          "reviews" : "Outta all the loans I’ve gotten, this has been the most amazing costumer service, understandable staff, they helped me fixed my payment schedule for me when I’ve gotten sick, very very good highly recommended.",
+          "stars" : "5"
+        }
+      }
+**************************************************
+GET /cashs/_search
+{
+  "query": {
+    "term": {
+        "Title": "awesome"
+    }
+  }
+}
+
+
+output:
+"hits" : {
+    "total" : {
+      "value" : 247,
+      "relation" : "eq"
+    },
+    "max_score" : 5.5493393,
+    "hits" : [
+      {
+        "_index" : "cashs",
+        "_id" : "3G9eFYQBDv47uvMdFyGp",
+        "_score" : 5.5493393,
+        "_source" : {
+          "Title" : "Awesome",
+          "reviews" : "Erica was very courteous and professional",
+          "stars" : "5"
+        }
+      },
+      {
+        "_index" : "cashs",
+        "_id" : "829eFYQBDv47uvMdFyGp",
+        "_score" : 5.5493393,
+        "_source" : {
+          "Title" : "Awesome!!!",
+          "reviews" : "This has been a the best experience for my needs, it has made a big difference and very trust worthy.",
+          "stars" : "5"
+        }
+      
+********************************************
+
+GET /cashs/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "match": {
+            "reviews": "experience"
+          }
+        }
+      ],
+      "must_not": [
+        {
+          "terms": {
+            "Title": [
+              "bad",
+              "worst"
+            ]
+          }
+        }
+      ],
+      "filter": [
+        {
+          "range": {
+            "stars": {
+              "gte": "4"
+            }
+          }
+        }
+      ]
+    }
+  }
+}
+
+
+output:
+
+"hits" : {
+    "total" : {
+      "value" : 590,
+      "relation" : "eq"
+    },
+    "max_score" : 4.7895584,
+    "hits" : [
+      {
+        "_index" : "cashs",
+        "_id" : "FXMPEYQBJYXJ4U_xNavm",
+        "_score" : 4.7895584,
+        "_source" : {
+          "Title" : "I've had this particular loan company…",
+          "reviews" : "Great experience, excellent experience, self explanations",
+          "stars" : "5"
+        }
+      }
+
+***********************************
+GET /cashs/_search
+{
+  "query": {
+    "bool": {
+      "must_not": [
+        {
+          "match": {
+            "reviews": "problem"
+          }
+        }
+      ],
+      "must": [
+        {
+          "terms": {
+            "Title": [
+              "great",
+              "amazing",
+              "helpful"
+            ]
+          }
+        }
+      ],
+      "filter": [
+        {
+          "range": {
+            "stars": {
+              "gte": "3",
+              "lte":"4"
+            }
+          }
+        }
+      ]
+    }
+  }
+}
+
+output:
+"hits" : [
+      {
+        "_index" : "cashs",
+        "_id" : "V3MPEYQBJYXJ4U_xNJ-M",
+        "_score" : 1.0,
+        "_source" : {
+          "Title" : "Great",
+          "reviews" : """I needed cash and she was able to walk me through my issues 😌""",
+          "stars" : "4"
+        }
+      },
+      {
+        "_index" : "cashs",
+        "_id" : "dXMPEYQBJYXJ4U_xNJ-M",
+        "_score" : 1.0,
+        "_source" : {
+          "Title" : "Wasn’t approved but still a great site",
+          "reviews" : "Excellent service, obtained a loan in a flash.",
+          "stars" : "3"
+        }
+      }
+
+********************************************
+GET /cashs/_search
+{ "size": 0,
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "terms": {
+            "reviews": [
+              "good",
+              "top",
+              "great",
+              "helpful"
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "aggs": {
+    "agg_title": {
+      "terms": {
+        "field": "Title.keyword"
+      }
+    }
+  }
+}
+
+
+output:
+
+ "hits" : {
+    "total" : {
+      "value" : 3138,
+      "relation" : "eq"
+    },
+    "max_score" : null,
+    "hits" : [ ]
+  },
+  "aggregations" : {
+    "agg_title" : {
+      "doc_count_error_upper_bound" : 0,
+      "sum_other_doc_count" : 2925,
+      "buckets" : [
+        {
+          "key" : "Great service",
+          "doc_count" : 39
+        },
+        {
+          "key" : "Great customer service",
+          "doc_count" : 30
+        },
+        {
+          "key" : "Excellent service",
+          "doc_count" : 24
+        }
+
+**************************************
+GET /cashs/_search
+{ "size": 0,
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "terms": {
+            "reviews": [
+              "good",
+              "great",
+              "awesome"
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "aggs": {
+    "agg_stars": {
+      "stats": {
+        "field": "stars"
+      }
+    }
+  }
+}
+
+output:
+
+{"hits" : {
+    "total" : {
+      "value" : 2486,
+      "relation" : "eq"
+    },
+    "max_score" : null,
+    "hits" : [ ]
+  },
+  "aggregations" : {
+    "agg_stars" : {
+      "count" : 2486,
+      "min" : 1.0,
+      "max" : 5.0,
+      "avg" : 4.7650844730490745,
+      "sum" : 11846.0
+    }
+  }
+}
+
+**********************************************
+GET /cashs/_search
+{
+  "size": 0,
+  "aggs": {
+    "stars_hist": {
+      "histogram": {
+        "field": "stars",
+        "interval": 1,
+        "min_doc_count": 0
+      }
+    }
+  }
+
+output:
+    "hits" : [ ]
+  },
+  "aggregations" : {
+    "stars_hist" : {
+      "buckets" : [
+        {
+          "key" : 1.0,
+          "doc_count" : 494
+        },
+        {
+          "key" : 2.0,
+          "doc_count" : 135
+        },
+        {
+          "key" : 3.0,
+          "doc_count" : 196
+        },
+        {
+          "key" : 4.0,
+          "doc_count" : 777
+        },
+        {
+          "key" : 5.0,
+          "doc_count" : 8660
+        }
+      ]
+    }
+  }
+}
+
+# ----------------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------------
